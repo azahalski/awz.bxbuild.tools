@@ -6,6 +6,7 @@ import tempfile
 import re
 import json
 import subprocess
+import requests
 
 
 def add_zip(arch, add_folder, mode, root_zip_folder=''):
@@ -155,3 +156,55 @@ def split_path(path, dirs=()):
     elif temp_dir[1] == '':
         return (temp_dir[0],)+dirs
     return split_path(temp_dir[0], temp_dir[1:]+dirs)
+
+
+def send_update():
+    url = 'https://partners.1c-bitrix.ru/personal/modules/deploy.php'
+    url_ver = 'https://partners.1c-bitrix.ru/personal/modules/update.php'
+    conf = get_config()
+    module_id = conf['module_path'].replace('../bitrix/modules/','')[0:-1]
+    #url += '?ID='+module_id
+
+    if not 'market_auth' in conf:
+        raise Exception('auth data for marketplace not found')
+    if os.path.exists(conf['market_auth']):
+        with open(conf['market_auth'], 'r') as file:
+            auth_data = json.load(file)
+
+    session = requests.Session()
+    resp = session.get(url, headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.143 Safari/537.36'
+    })
+
+    authFormData = {
+        'AUTH_FORM': 'Y',
+        'TYPE': 'AUTH',
+        'USER_LOGIN': auth_data['login'],
+        'USER_PASSWORD': auth_data['password'],
+        'USER_REMEMBER': 'Y',
+        'Login': 'Войти'
+    }
+
+    request = session.post(url, authFormData)
+    sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', request.text)
+
+    last_version = get_module_version(conf['module_path'])
+    if not last_version:
+        raise Exception('not updated version')
+    arch_path = os.path.join(conf['output_path'], 'update', last_version+'.zip')
+    if not os.path.isfile(arch_path):
+        raise Exception('not updated version')
+    updater_data = {
+        'sessid': sess_id.group(1),
+        'ID': module_id,
+        'update': open(arch_path, "rb"),
+        'submit': 'Загрузить'
+    }
+    session.post(url, updater_data)
+    updater_data_ver = {
+        'sessid': sess_id.group(1),
+        'ID': module_id,
+        last_version: 'stable',
+        'submit': 'Загрузить'
+    }
+    session.post(url_ver, updater_data_ver)
