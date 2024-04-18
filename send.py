@@ -1,5 +1,5 @@
 import sys
 sys.path.append("../")
-from build.tools import *
+from bxbuild.tools import *
 
 send_update()

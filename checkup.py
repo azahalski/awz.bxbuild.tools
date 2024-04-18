@@ -1,7 +1,7 @@
 import sys
 
 sys.path.append("../")
-from build.tools import *
+from bxbuild.tools import *
 
 conf = get_config()
 updates_path = os.path.abspath(conf['updates_path'])
