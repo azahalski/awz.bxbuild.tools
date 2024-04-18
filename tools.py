@@ -89,7 +89,7 @@ def get_module_version(module_path, encoding_file='utf-8'):
 
 def get_config():
     conf_file = 'conf.json'
-    full_path = os.path.join('../', 'build', conf_file)
+    full_path = os.path.join('../', conf_file)
     if os.path.exists(full_path):
         with open(full_path, 'r') as file:
             json_data = json.load(file)
