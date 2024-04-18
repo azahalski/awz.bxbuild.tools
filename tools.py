@@ -159,11 +159,13 @@ def split_path(path, dirs=()):
 
 
 def send_update():
+    url_start = 'https://partners.1c-bitrix.ru/personal/modules/edit.php'
     url = 'https://partners.1c-bitrix.ru/personal/modules/deploy.php'
     url_ver = 'https://partners.1c-bitrix.ru/personal/modules/update.php'
     conf = get_config()
     module_id = conf['module_path'].replace('../bitrix/modules/','')[0:-1]
-    #url += '?ID='+module_id
+    url_start += '?ID='+module_id
+    url += '?ID='+module_id
 
     if not 'market_auth' in conf:
         raise Exception('auth data for marketplace not found')
@@ -172,7 +174,7 @@ def send_update():
             auth_data = json.load(file)
 
     session = requests.Session()
-    resp = session.get(url, headers={
+    resp = session.get(url_start, headers={
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.143 Safari/537.36'
     })
 
@@ -185,8 +187,9 @@ def send_update():
         'Login': 'Войти'
     }
 
-    request = session.post(url, authFormData)
-    sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', request.text)
+    request = session.post(url_start, authFormData)
+    sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', request.text.replace("\n",""))
+    #print(sess_id)
 
     last_version = get_module_version(conf['module_path'])
     if not last_version:
@@ -194,13 +197,17 @@ def send_update():
     arch_path = os.path.join(conf['output_path'], 'update', last_version+'.zip')
     if not os.path.isfile(arch_path):
         raise Exception('not updated version')
+
     updater_data = {
         'sessid': sess_id.group(1),
         'ID': module_id,
-        'update': open(arch_path, "rb"),
         'submit': 'Загрузить'
     }
-    session.post(url, updater_data)
+    files = {
+        'update': (last_version + '.zip', open(arch_path, "rb"))
+    }
+    r = session.post(url, updater_data, files=files)
+
     updater_data_ver = {
         'sessid': sess_id.group(1),
         'ID': module_id,
