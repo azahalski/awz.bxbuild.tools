@@ -88,7 +88,7 @@ def get_module_version(module_path, encoding_file='utf-8'):
 
 
 def get_config():
-    conf_file = 'conf.json'
+    conf_file = 'bxbuildtools.json'
     full_path = os.path.join('../', conf_file)
     if os.path.exists(full_path):
         with open(full_path, 'r') as file:
