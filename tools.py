@@ -158,6 +158,16 @@ def split_path(path, dirs=()):
     return split_path(temp_dir[0], temp_dir[1:]+dirs)
 
 
+def parse_success_text(tx):
+    regex_ok = re.compile(r'<span\sclass=(?:"|\')text-success(?:"|\')>([^<]+\s(?:<strong>)[^<]+(?:</strong>)\s[^<]+|[^<]+)</span>')
+    t_ok = re.findall(regex_ok, tx)
+    t_ok_text = ''
+    if len(t_ok):
+        t_ok_text = t_ok[0]
+        t_ok_text = t_ok_text.replace('<strong>', '')
+        t_ok_text = t_ok_text.replace('</strong>', '')
+    return t_ok_text
+
 def send_update():
     url_start = 'https://partners.1c-bitrix.ru/personal/modules/edit.php'
     url = 'https://partners.1c-bitrix.ru/personal/modules/deploy.php'
@@ -187,17 +197,22 @@ def send_update():
         'Login': 'Войти'
     }
 
+    #авторизация
     request = session.post(url_start, authFormData)
-    sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', request.text.replace("\n",""))
+    module_page = request.text
+    sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', module_page.replace("\n",""))
     #print(sess_id)
 
+    #архивы сборки
     last_version = get_module_version(conf['module_path'])
     if not last_version:
         raise Exception('not updated version')
     arch_path = os.path.join(conf['output_path'], 'update', last_version+'.zip')
+    arch_path_full = os.path.join(conf['output_path'], '.last_version.zip')
     if not os.path.isfile(arch_path):
         raise Exception('not updated version')
 
+    #подготовка запроса на добавление версии
     updater_data = {
         'sessid': sess_id.group(1),
         'ID': module_id,
@@ -206,8 +221,15 @@ def send_update():
     files = {
         'update': (last_version + '.zip', open(arch_path, "rb"))
     }
-    r = session.post(url, updater_data, files=files)
+    #запрос на добавление версии
+    try:
+        r = session.post(url, updater_data, files=files)
+        t_ok_text = parse_success_text(r.text)
+        print('send', url, t_ok_text)
+    except Exception as e:
+        raise Exception('upload version error')
 
+    #подготовка обновления архива модуля
     updater_data_ver = {
         'sessid': sess_id.group(1),
         'ID': module_id,
@@ -215,3 +237,67 @@ def send_update():
         'submit': 'Загрузить'
     }
     session.post(url_ver, updater_data_ver)
+
+    fields = {
+        "sessid":sess_id.group(1),
+        "ID":module_id,
+        "edit_module":"Y",
+        "apply":"Y"
+    }
+    #сбор полей редактора
+    jsFields = ['descriptionRU', 'INSTALLRU', 'SUPPORTRU', 'EULA_LINK']
+    field = None
+    regex = r"(?:(?:var config.*)(descriptionRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(INSTALLRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(SUPPORTRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(EULA_LINK)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))"
+    matches = re.finditer(regex, module_page, re.MULTILINE | re.IGNORECASE)
+    for matchNum, match in enumerate(matches, start=1):
+        for groupNum in range(0, len(match.groups())):
+            groupNum = groupNum + 1
+            group = match.group(groupNum)
+            if group in jsFields:
+                field = group
+            elif field:
+                fields[field] = re.sub(r'\\{1,}n', '\n', group)
+                field = None
+
+    module_page = " ".join(module_page.split())
+
+    fields['licenses'] = re.findall(r'name="licenses\[\]"\svalue="([0-9A-Z]+)"\schecked', module_page)
+
+    sel_fields = ('mtype','category')
+    for _ in sel_fields:
+        fields[_] = []
+        regex1 = re.compile(r'name="' + _ + '\[\]".*?</select>')
+        sel = re.findall(regex1, module_page)
+        if len(sel):
+            regex2 = re.compile(r'option\svalue="([^"]+)"\sselected')
+            fields[_] = re.findall(regex2, sel[0])
+
+    check_fields = ('active', 'COMPATIBLE_PHP8', 'SITE24', 'COMPOSITE', 'ADAPT', 'PARTNER_DISCOUNT',
+                    'freeModuleDemo', 'freeModule','USE_SUPPORT_DEFAULT_TEXT','DETAIL_DISCUSSIONS_OFF','YA_METRIKA')
+    for _ in check_fields:
+        fields[_] = ''
+        regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"\schecked')
+        _res = re.findall(regex, module_page)
+        if len(_res):
+            fields[_] = _res[0]
+
+    inp_fields = ('openLineUrl', 'nameRU', 'PRICERU', 'trial_period', 'NEW_NAME_RU', 'LICENSE_NAME', 'NEW_LICENSE_NAME',
+                  'MARKETING_NAME','DEMO_LINKRU','VIDEO_LINKRU','googleAnalytics','YA_METRIKA_COUNTER','P_SORT')
+    for _ in inp_fields:
+        fields[_] = ''
+        regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"')
+        _res = re.findall(regex, module_page)
+        if len(_res):
+            fields[_] = _res[0]
+
+    files = {
+        'update': ('.last_version.zip', open(arch_path_full, "rb"))
+    }
+    # запрос на обновление данных решения
+    try:
+        r = session.post(url_start, fields, files=files)
+        t_ok_text = parse_success_text(r.text)
+        print('send', url_start, t_ok_text)
+    except Exception as e:
+        raise Exception('upload module error')
+
