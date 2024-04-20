@@ -11,11 +11,11 @@ ver_key_str = '.'.join(ver_list)
 change_log[ver_key_str] = []
 change_log[ver_key_str].append('## История версий')
 
-if not ("readme_file" in conf):
-    raise Exception("README.MD file not found in conf.json")
+if not ("changelog_file" in conf):
+    raise Exception("CHANGELOG.MD file not found in bxbuildtools.json")
 
 updates_path = os.path.abspath(conf["updates_path"])
-readme_file = os.path.abspath(conf["readme_file"])
+readme_file = os.path.abspath(conf["changelog_file"])
 for name in os.listdir(updates_path):
     if name[-5:] == '.json':
         continue
