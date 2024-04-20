@@ -287,7 +287,7 @@ def send_update(options):
             regex2 = re.compile(r'option\svalue="([^"]+)"\sselected')
             fields[_] = re.findall(regex2, sel[0])
 
-    check_fields = ('active', 'COMPATIBLE_PHP8', 'SITE24', 'COMPOSITE', 'ADAPT', 'PARTNER_DISCOUNT',
+    check_fields = ('active', 'publish', 'COMPATIBLE_PHP8', 'SITE24', 'COMPOSITE', 'ADAPT', 'PARTNER_DISCOUNT',
                     'freeModuleDemo', 'freeModule','USE_SUPPORT_DEFAULT_TEXT','DETAIL_DISCUSSIONS_OFF','YA_METRIKA')
     for _ in check_fields:
         fields[_] = ''
