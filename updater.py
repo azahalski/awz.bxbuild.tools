@@ -11,4 +11,3 @@ if version:
     zip_name = os.path.abspath(conf['output_path'] + 'update/' + version + '.zip')
     updater_path = os.path.join(updates_path, version)
     build_main(updater_path, zip_name, version)
-    set_last_hash(updates_path, version)

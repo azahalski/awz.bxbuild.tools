@@ -129,18 +129,23 @@ def get_changed(updates_path, prepare_version):
         return []
 
 
-def set_last_hash(updates_path, version):
+def set_last_hash():
     """
     запись хеша контрольной точки текущей версии
     для последующей проверки изменений файлов при билде следующей версии
     """
+    conf = get_config()
+    git_path = os.path.abspath(conf['git_path'])
+    updates_path = os.path.abspath(conf['updates_path'])
     mark_path = os.path.join(updates_path, 'marked_hashes.json')
+    module_path = os.path.abspath(conf['module_path'])
+    version = get_module_version(module_path)
     json_data = {}
     if os.path.exists(mark_path):
         with open(mark_path, 'r') as file:
             json_data = json.load(file)
     command = 'git rev-parse HEAD'
-    run = subprocess.run(command, capture_output=True)
+    run = subprocess.run(command, capture_output=True, cwd=git_path)
     json_start = json_data.copy()
     json_data[version] = run.stdout.decode().strip()
     with open(mark_path, "w") as outfile:
