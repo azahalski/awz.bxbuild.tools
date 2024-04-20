@@ -176,7 +176,7 @@ def parse_success_text(tx):
     return t_ok_text
 
 
-def send_update():
+def send_update(options):
     url_start = 'https://partners.1c-bitrix.ru/personal/modules/edit.php'
     url = 'https://partners.1c-bitrix.ru/personal/modules/deploy.php'
     url_ver = 'https://partners.1c-bitrix.ru/personal/modules/update.php'
@@ -185,9 +185,11 @@ def send_update():
     url_start += '?ID='+module_id
     url += '?ID='+module_id
 
-    if not 'market_auth' in conf:
+    if 'user' in options:
+        auth_data = {"login":options["user"], "password": options["password"]}
+    elif not 'market_auth' in conf:
         raise Exception('auth data for marketplace not found')
-    if os.path.exists(conf['market_auth']):
+    elif os.path.exists(conf['market_auth']):
         with open(conf['market_auth'], 'r') as file:
             auth_data = json.load(file)
 
