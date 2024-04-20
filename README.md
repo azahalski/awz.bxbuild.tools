@@ -2,7 +2,7 @@
 
 ```gitexclude
 path = bxbuild
-url = git@github.com:zahalski/awz.bxbuildtools.git
+url = git@github.com:zahalski/awz.bxbuild.tools.git
 ```
 ```
 cd bxbuild
