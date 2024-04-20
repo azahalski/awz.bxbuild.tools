@@ -108,15 +108,22 @@ def get_config():
     return False
 
 
-def get_changed(updates_path, prepare_version):
+def get_hashes(updates_path):
     mark_path = os.path.join(updates_path, 'marked_hashes.json')
     json_data = {}
     if os.path.exists(mark_path):
         with open(mark_path, 'r') as file:
             json_data = json.load(file)
-    if prepare_version in json_data:
-        command = 'git diff --name-only '+json_data[prepare_version]
-        run = subprocess.run(command, capture_output=True)
+    return json_data
+
+
+def get_changed(updates_path, prepare_version):
+    hashes_data = get_hashes(updates_path)
+    conf = get_config()
+    git_path = os.path.abspath(conf['git_path'])
+    if prepare_version in hashes_data:
+        command = 'git diff --name-only '+hashes_data[prepare_version]
+        run = subprocess.run(command, capture_output=True, cwd=git_path)
         return [str(path) for path in run.stdout.decode().strip().split("\n")]
     else:
         return []
@@ -167,6 +174,7 @@ def parse_success_text(tx):
         t_ok_text = t_ok_text.replace('<strong>', '')
         t_ok_text = t_ok_text.replace('</strong>', '')
     return t_ok_text
+
 
 def send_update():
     url_start = 'https://partners.1c-bitrix.ru/personal/modules/edit.php'
@@ -301,3 +309,65 @@ def send_update():
     except Exception as e:
         raise Exception('upload module error')
 
+
+def get_all_versions():
+    conf = get_config()
+    updates_path = os.path.abspath(conf['updates_path'])
+    change_log = {'0001.0000.0000':[]}
+    for name in os.listdir(updates_path):
+        if name[-5:] == '.json':
+            continue
+        else:
+            if os.path.isfile(os.path.join(updates_path, str(name), 'description.ru')):
+                ver = str(name)
+                ver_list = [f'{int(x):04}' for x in ver.split(".")]
+                ver_key_str = '.'.join(ver_list)
+                change_log[ver_key_str] = []
+    sorted_change_log = dict(sorted(change_log.items()))
+    cl = []
+    for _ in sorted_change_log.keys():
+        cl.append('.'.join(str(int(_2)) for _2 in _.split(".")))
+    return cl
+
+def add_description():
+    conf = get_config()
+    updates_path = os.path.abspath(conf['updates_path'])
+    module_path = os.path.abspath(conf['module_path'])
+    git_path = os.path.abspath(conf['git_path'])
+    last_version = get_module_version(module_path)
+
+    all_versions = get_all_versions()
+    prepare_version = all_versions[len(all_versions) - 1]
+    hashes_data = get_hashes(updates_path)
+
+    new_version_path = os.path.abspath(os.path.join(updates_path, last_version))
+    new_version_desc = os.path.join(new_version_path, 'description.ru')
+    if not os.path.isfile(new_version_desc):
+        with open(new_version_desc, "w", encoding='utf-8') as outfile:
+            if prepare_version in hashes_data:
+                command = 'git log --pretty=format:"%H:::%s"'
+                run = subprocess.run(command, capture_output=True, cwd=git_path)
+                rows = [str(path) for path in run.stdout.decode().strip().split("\n")]
+                rows_print = []
+                for row in rows:
+                    row_ar = row.split(":::")
+                    _row = row_ar[1]
+                    if hashes_data[prepare_version] == row_ar[0]:
+                        break
+                    if _row[0] == '-' and len(_row)>10:
+                        if _row[-1] == ';':
+                            rows_print.append(_row[1:-1].strip())
+                        elif row[-1] == '.':
+                            rows_print.append(_row[1:-1].strip())
+                        else:
+                            rows_print.append(_row[1:].strip())
+                if not len(rows_print):
+                    rows_print.append('обновление '+str(last_version))
+                for _ in rows_print:
+                    sep = ";\n"
+                    if rows_print[len(rows_print)-1] == _:
+                        sep = "."
+                    outfile.write('- '+_+sep)
+            print("created file", "description.ru", rows_print)
+    else:
+        print(new_version_desc, "is exists")
