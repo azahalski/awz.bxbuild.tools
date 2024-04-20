@@ -1,7 +1,15 @@
 # Использование сборщика модулей
-```shell 
-cd build
+
+```gitexclude
+path = bxbuild
+url = git@github.com:zahalski/awz.bxbuildtools.git
 ```
+```
+cd bxbuild
+```
+файл конфигурации сборки модуля:
+```../bxbuildtools.json```
+
 ## 1. Добавить коммит с изменениями
 ## 2. Копирование изменений в архив сборки
 ```shell 
