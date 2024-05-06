@@ -351,11 +351,11 @@ def add_description():
     new_version_desc = os.path.join(new_version_path, 'description.ru')
     if not os.path.isfile(new_version_desc):
         with open(new_version_desc, "w", encoding='utf-8') as outfile:
+            rows_print = []
             if prepare_version in hashes_data:
                 command = 'git log --pretty=format:"%H:::%s"'
                 run = subprocess.run(command, capture_output=True, cwd=git_path)
                 rows = [str(path) for path in run.stdout.decode().strip().split("\n")]
-                rows_print = []
                 for row in rows:
                     row_ar = row.split(":::")
                     _row = row_ar[1]
