@@ -202,6 +202,7 @@ def send_update(options):
     resp = session.get(url_start, headers={
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.143 Safari/537.36'
     })
+    #print(url_start)
 
     authFormData = {
         'AUTH_FORM': 'Y',
@@ -211,12 +212,16 @@ def send_update(options):
         'USER_REMEMBER': 'Y',
         'Login': 'Войти'
     }
+    #print(authFormData)
 
     #авторизация
     request = session.post(url_start, authFormData)
     module_page = request.text
     sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', module_page.replace("\n",""))
+    if not sess_id:
+        sess_id = re.match(r'.*bitrix_sessid\'\:\'([0-9a-z]+)\'.*', module_page.replace("\n",""))
     #print(sess_id)
+    #print(module_page)
 
     #архивы сборки
     last_version = get_module_version(conf['module_path'])
