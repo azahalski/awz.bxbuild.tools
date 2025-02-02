@@ -220,6 +220,8 @@ def send_update(options):
     sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', module_page.replace("\n",""))
     if not sess_id:
         sess_id = re.match(r'.*bitrix_sessid\'\:\'([0-9a-z]+)\'.*', module_page.replace("\n",""))
+    if not sess_id:
+        sess_id = re.match(r'.*bitrix_sessid\"\:\"([0-9a-z]+)\".*', module_page.replace("\n",""))
     #print(sess_id)
     #print(module_page)
 
