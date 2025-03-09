@@ -1,6 +1,9 @@
 import sys
 sys.path.append("../")
-from bxbuild.tools import *
+try:
+	from bxbuild.tools import *
+except:
+	from tools import *
 
 conf = get_config()
 module_path = os.path.abspath(conf['module_path'])

@@ -1,11 +1,11 @@
 # Использование сборщика модулей
 
 ```gitexclude
-path = bxbuild
-url = git@github.com:zahalski/awz.bxbuild.tools.git
+path = tools/build
+url = git@github.com:azahalski/awz.bxbuild.tools.git
 ```
 ```
-cd bxbuild
+cd build
 ```
 файл конфигурации сборки модуля:
 ```../bxbuildtools.json```

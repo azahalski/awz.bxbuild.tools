@@ -73,6 +73,7 @@ def get_module_version(module_path, encoding_file='utf-8'):
     version = False
     version_file = os.path.join(module_path, 'install/version.php')
     if not os.path.isfile(version_file):
+        print("not version file", version_file)
         return version
     with open(version_file, 'r', encoding=encoding_file) as fv:
         for line in fv:
@@ -105,6 +106,8 @@ def get_config():
                 if not (key in json_data):
                     raise Exception(key+" is required key in "+conf_file)
             return json_data
+    else:
+        print("not found config",full_path)
     return False
 
 
@@ -187,6 +190,9 @@ def send_update(options):
     url_ver = 'https://partners.1c-bitrix.ru/personal/modules/update.php'
     conf = get_config()
     module_id = conf['module_path'].replace('../bitrix/modules/','')[0:-1]
+    for _ in range(0,10):
+        module_id = module_id.replace('./','/')
+    module_id = module_id.replace('/','')
     url_start += '?ID='+module_id
     url += '?ID='+module_id
 
@@ -222,6 +228,7 @@ def send_update(options):
         sess_id = re.match(r'.*bitrix_sessid\'\:\'([0-9a-z]+)\'.*', module_page.replace("\n",""))
     if not sess_id:
         sess_id = re.match(r'.*bitrix_sessid\"\:\"([0-9a-z]+)\".*', module_page.replace("\n",""))
+    print('find session id', sess_id.group(1))
     #print(sess_id)
     #print(module_page)
 
@@ -258,7 +265,12 @@ def send_update(options):
         last_version: 'stable',
         'submit': 'Загрузить'
     }
-    session.post(url_ver, updater_data_ver)
+    try:
+        r = session.post(url_ver, updater_data_ver)
+        t_ok_text = parse_success_text(r.text)
+        print('send', url_ver, t_ok_text)
+    except Exception as e:
+        raise Exception('upload version error')
 
     fields = {
         "sessid":sess_id.group(1),
