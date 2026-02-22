@@ -291,6 +291,10 @@ def send_update(options):
                 field = group
             elif field:
                 fields[field] = re.sub(r'\\{1,}n', '\n', group)
+                file_content = os.path.join(conf['output_path'], field+'.txt')
+                if os.path.isfile(file_content):
+                    with open(file_content, "r") as f:
+                        fields[field] = f.read()
                 field = None
 
     module_page = " ".join(module_page.split())
