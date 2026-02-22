@@ -293,7 +293,7 @@ def send_update(options):
                 fields[field] = re.sub(r'\\{1,}n', '\n', group)
                 file_content = os.path.join(conf['output_path'], field+'.txt')
                 if os.path.isfile(file_content):
-                    with open(file_content, "r") as f:
+                    with open(file_content, "r", encoding='utf-8') as f:
                         fields[field] = f.read()
                 field = None
 
@@ -318,6 +318,10 @@ def send_update(options):
         _res = re.findall(regex, module_page)
         if len(_res):
             fields[_] = _res[0]
+            file_content = os.path.join(conf['output_path'], _ + '.txt')
+            if os.path.isfile(file_content):
+                with open(file_content, "r", encoding='utf-8') as f:
+                    fields[_] = f.read()
 
     inp_fields = ('openLineUrl', 'nameRU', 'PRICERU', 'trial_period', 'NEW_NAME_RU', 'LICENSE_NAME', 'NEW_LICENSE_NAME',
                   'MARKETING_NAME','DEMO_LINKRU','VIDEO_LINKRU','googleAnalytics','YA_METRIKA_COUNTER','P_SORT')
@@ -327,6 +331,10 @@ def send_update(options):
         _res = re.findall(regex, module_page)
         if len(_res):
             fields[_] = _res[0]
+            file_content = os.path.join(conf['output_path'], _ + '.txt')
+            if os.path.isfile(file_content):
+                with open(file_content, "r", encoding='utf-8') as f:
+                    fields[_] = f.read()
 
     files = {
         'update': ('.last_version.zip', open(arch_path_full, "rb"))
