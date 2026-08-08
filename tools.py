@@ -368,15 +368,15 @@ def send_update(options):
 
     # отчет по уязвимостям
     try:
-        files = {}
+        files = {
+            'security_journal_file': ('security-journal.json', open(arch_path_report, "rb"))
+        }
         fields = {
             "sessid": sess_id.group(1),
             "ID": module_id,
-            "send_security_journal": "Y"
+            "send_security_journal": "Y",
+            "security_journal_confirm": "Y"
         }
-        if os.path.isfile(arch_path_report):
-            fields['security_journal_confirm'] = 'Y'
-            files['security_journal_file'] = ('security-journal.json', open(arch_path_report, "rb"))
 
         r = session.post(url_ver, fields, files=files)
         t_ok_text = parse_success_text(r.text)
