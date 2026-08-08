@@ -174,15 +174,31 @@ def split_path(path, dirs=()):
 
 
 def parse_success_text(tx):
+    result = {
+        'success_text': '',
+        'alert_text': ''
+    }
+
+    # 1. Поиск текста успешного выполнения (ваш оригинальный регулярный перевод)
     regex_ok = re.compile(
         r'<span\sclass=(?:"|\')text-success(?:"|\')>([^<]+\s(?:<strong>)[^<]+(?:</strong>)\s[^<]+|[^<]+)</span>')
     t_ok = re.findall(regex_ok, tx)
-    t_ok_text = ''
-    if len(t_ok):
+    if t_ok:
         t_ok_text = t_ok[0]
-        t_ok_text = t_ok_text.replace('<strong>', '')
-        t_ok_text = t_ok_text.replace('</strong>', '')
-    return t_ok_text
+        t_ok_text = t_ok_text.replace('<strong>', '').replace('</strong>', '')
+        result['success_text'] = t_ok_text.strip()
+
+    # 2. Поиск предупреждения перед формой
+    regex_alert = re.compile(
+        r'<section\sclass="bx-ui-alert[^"]*">.*?<p\sclass="paragraph-15[^"]*">(.*?)</p>',
+        re.DOTALL
+    )
+    t_alert = re.findall(regex_alert, tx)
+    if t_alert:
+        # Очищаем текст от переносов строк и лишних пробелов по краям
+        result['alert_text'] = t_alert[0].strip()
+
+    return result['success_text']+' '+result['alert_text']
 
 
 def send_update(options):
