@@ -16,18 +16,18 @@ def add_zip(arch, add_folder, mode, root_zip_folder=''):
             # Создание относительных путей и запись файлов в архив
             path = os.path.join(root, file)
             len_rm = len(add_folder)
-            z.write(path, root_zip_folder+path[len_rm:])
+            z.write(path, root_zip_folder + path[len_rm:])
     z.close()
     print('created zip', arch)
 
 
 def encode_bx(filename, encoding_from='utf-8', encoding_to='windows-1251', original_file=''):
     with open(filename, 'r', encoding=encoding_from) as fr:
-        with open(filename+'.tmp', 'w', encoding=encoding_to) as fw:
+        with open(filename + '.tmp', 'w', encoding=encoding_to) as fw:
             for line in fr:
                 fw.write(line)
-    shutil.copyfile(filename+'.tmp', filename)
-    os.remove(filename+'.tmp')
+    shutil.copyfile(filename + '.tmp', filename)
+    os.remove(filename + '.tmp')
     print('converting ', original_file, 'from', encoding_from, 'to', encoding_to)
 
 
@@ -44,24 +44,24 @@ def check_encoding(file_path):
 
 def get_files(file_path, copy_dir):
     for name in os.listdir(file_path):
-        if not os.path.isdir(os.path.join(file_path,name)):
-            shutil.copyfile(os.path.join(file_path,name), os.path.join(copy_dir,name))
-            if os.path.join('lang','ru') in os.path.join(file_path,name) or 'description.ru' in name:
-                res = check_encoding(os.path.join(copy_dir,name))
+        if not os.path.isdir(os.path.join(file_path, name)):
+            shutil.copyfile(os.path.join(file_path, name), os.path.join(copy_dir, name))
+            if os.path.join('lang', 'ru') in os.path.join(file_path, name) or 'description.ru' in name:
+                res = check_encoding(os.path.join(copy_dir, name))
                 if res['charset'] != 'utf-8':
-                    raise Exception('incorrect charset: '+res['charset']+' from file '+res['path'])
+                    raise Exception('incorrect charset: ' + res['charset'] + ' from file ' + res['path'])
                 else:
-                    encode_bx(os.path.join(copy_dir,name), original_file=os.path.join(file_path,name))
+                    encode_bx(os.path.join(copy_dir, name), original_file=os.path.join(file_path, name))
         else:
-            if not os.path.isdir(os.path.join(copy_dir,name)):
-                os.mkdir(os.path.join(copy_dir,name))
-            get_files(os.path.join(file_path,name), os.path.join(copy_dir,name))
+            if not os.path.isdir(os.path.join(copy_dir, name)):
+                os.mkdir(os.path.join(copy_dir, name))
+            get_files(os.path.join(file_path, name), os.path.join(copy_dir, name))
 
 
 def build_main(module_path, zip_name, folder=".last_version/"):
     version = get_module_version(module_path)
     if not version:
-        raise Exception('is bitrix module? path: '+module_path)
+        raise Exception('is bitrix module? path: ' + module_path)
     print('creating ', zip_name, 'module version', version)
     tmp_dir = tempfile.mkdtemp()
     get_files(module_path, tmp_dir)
@@ -104,10 +104,10 @@ def get_config():
             ]
             for key in require_key:
                 if not (key in json_data):
-                    raise Exception(key+" is required key in "+conf_file)
+                    raise Exception(key + " is required key in " + conf_file)
             return json_data
     else:
-        print("not found config",full_path)
+        print("not found config", full_path)
     return False
 
 
@@ -125,7 +125,7 @@ def get_changed(updates_path, prepare_version):
     conf = get_config()
     git_path = os.path.abspath(conf['git_path'])
     if prepare_version in hashes_data:
-        command = 'git diff --name-only '+hashes_data[prepare_version]
+        command = 'git diff --name-only ' + hashes_data[prepare_version]
         run = subprocess.run(command, capture_output=True, cwd=git_path)
         return [str(path) for path in run.stdout.decode().strip().split("\n")]
     else:
@@ -169,12 +169,13 @@ def split_path(path, dirs=()):
     if len(temp_dir) == 1:
         return dirs
     elif temp_dir[1] == '':
-        return (temp_dir[0],)+dirs
-    return split_path(temp_dir[0], temp_dir[1:]+dirs)
+        return (temp_dir[0],) + dirs
+    return split_path(temp_dir[0], temp_dir[1:] + dirs)
 
 
 def parse_success_text(tx):
-    regex_ok = re.compile(r'<span\sclass=(?:"|\')text-success(?:"|\')>([^<]+\s(?:<strong>)[^<]+(?:</strong>)\s[^<]+|[^<]+)</span>')
+    regex_ok = re.compile(
+        r'<span\sclass=(?:"|\')text-success(?:"|\')>([^<]+\s(?:<strong>)[^<]+(?:</strong>)\s[^<]+|[^<]+)</span>')
     t_ok = re.findall(regex_ok, tx)
     t_ok_text = ''
     if len(t_ok):
@@ -189,15 +190,15 @@ def send_update(options):
     url = 'https://partners.1c-bitrix.ru/personal/modules/deploy.php'
     url_ver = 'https://partners.1c-bitrix.ru/personal/modules/update.php'
     conf = get_config()
-    module_id = conf['module_path'].replace('../bitrix/modules/','')[0:-1]
-    for _ in range(0,10):
-        module_id = module_id.replace('./','/')
-    module_id = module_id.replace('/','')
-    url_start += '?ID='+module_id
-    url += '?ID='+module_id
+    module_id = conf['module_path'].replace('../bitrix/modules/', '')[0:-1]
+    for _ in range(0, 10):
+        module_id = module_id.replace('./', '/')
+    module_id = module_id.replace('/', '')
+    url_start += '?ID=' + module_id
+    url += '?ID=' + module_id
 
     if 'user' in options:
-        auth_data = {"login":options["user"], "password": options["password"]}
+        auth_data = {"login": options["user"], "password": options["password"]}
     elif not 'market_auth' in conf:
         raise Exception('auth data for marketplace not found')
     elif os.path.exists(conf['market_auth']):
@@ -208,7 +209,7 @@ def send_update(options):
     resp = session.get(url_start, headers={
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.143 Safari/537.36'
     })
-    #print(url_start)
+    # print(url_start)
 
     authFormData = {
         'AUTH_FORM': 'Y',
@@ -218,30 +219,31 @@ def send_update(options):
         'USER_REMEMBER': 'Y',
         'Login': 'Войти'
     }
-    #print(authFormData)
+    # print(authFormData)
 
-    #авторизация
+    # авторизация
     request = session.post(url_start, authFormData)
     module_page = request.text
-    sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', module_page.replace("\n",""))
+    sess_id = re.match(r'.*id="sessid"\svalue="([0-9a-z]+)".*', module_page.replace("\n", ""))
     if not sess_id:
-        sess_id = re.match(r'.*bitrix_sessid\'\:\'([0-9a-z]+)\'.*', module_page.replace("\n",""))
+        sess_id = re.match(r'.*bitrix_sessid\'\:\'([0-9a-z]+)\'.*', module_page.replace("\n", ""))
     if not sess_id:
-        sess_id = re.match(r'.*bitrix_sessid\"\:\"([0-9a-z]+)\".*', module_page.replace("\n",""))
+        sess_id = re.match(r'.*bitrix_sessid\"\:\"([0-9a-z]+)\".*', module_page.replace("\n", ""))
     print('find session id', sess_id.group(1))
-    #print(sess_id)
-    #print(module_page)
+    # print(sess_id)
+    # print(module_page)
 
-    #архивы сборки
+    # архивы сборки
     last_version = get_module_version(conf['module_path'])
     if not last_version:
         raise Exception('not updated version')
-    arch_path = os.path.join(conf['output_path'], 'update', last_version+'.zip')
+    arch_path = os.path.join(conf['output_path'], 'update', last_version + '.zip')
     arch_path_full = os.path.join(conf['output_path'], '.last_version.zip')
+    arch_path_report = os.path.join(conf['output_path'], 'security-journal.json')
     if not os.path.isfile(arch_path):
         raise Exception('not updated version')
 
-    #подготовка запроса на добавление версии
+    # подготовка запроса на добавление версии
     updater_data = {
         'sessid': sess_id.group(1),
         'ID': module_id,
@@ -250,7 +252,7 @@ def send_update(options):
     files = {
         'update': (last_version + '.zip', open(arch_path, "rb"))
     }
-    #запрос на добавление версии
+    # запрос на добавление версии
     try:
         r = session.post(url, updater_data, files=files)
         t_ok_text = parse_success_text(r.text)
@@ -258,7 +260,7 @@ def send_update(options):
     except Exception as e:
         raise Exception('upload version error')
 
-    #подготовка обновления архива модуля
+    # подготовка обновления архива модуля
     updater_data_ver = {
         'sessid': sess_id.group(1),
         'ID': module_id,
@@ -273,12 +275,12 @@ def send_update(options):
         raise Exception('upload version error')
 
     fields = {
-        "sessid":sess_id.group(1),
-        "ID":module_id,
-        "edit_module":"Y",
-        "apply":"Y"
+        "sessid": sess_id.group(1),
+        "ID": module_id,
+        "edit_module": "Y",
+        "apply": "Y"
     }
-    #сбор полей редактора
+    # сбор полей редактора
     jsFields = ['descriptionRU', 'INSTALLRU', 'SUPPORTRU', 'EULA_LINK']
     field = None
     regex = r"(?:(?:var config.*)(descriptionRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(INSTALLRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(SUPPORTRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(EULA_LINK)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))"
@@ -291,7 +293,7 @@ def send_update(options):
                 field = group
             elif field:
                 fields[field] = re.sub(r'\\{1,}n', '\n', group)
-                file_content = os.path.join(conf['output_path'], field+'.txt')
+                file_content = os.path.join(conf['output_path'], field + '.txt')
                 if os.path.isfile(file_content):
                     with open(file_content, "r", encoding='utf-8') as f:
                         fields[field] = f.read()
@@ -301,7 +303,7 @@ def send_update(options):
 
     fields['licenses'] = re.findall(r'name="licenses\[\]"\svalue="([0-9A-Z]+)"\schecked', module_page)
 
-    sel_fields = ('mtype','category')
+    sel_fields = ('mtype', 'category')
     for _ in sel_fields:
         fields[_] = []
         regex1 = re.compile(r'name="' + _ + '\[\]".*?</select>')
@@ -310,8 +312,9 @@ def send_update(options):
             regex2 = re.compile(r'option\svalue="([^"]+)"\sselected')
             fields[_] = re.findall(regex2, sel[0])
 
-    check_fields = ('active', 'publish', 'COMPATIBLE_PHP8', 'COMPATIBLE_PGSQL', 'SITE24', 'COMPOSITE', 'ADAPT', 'PARTNER_DISCOUNT',
-                    'freeModuleDemo', 'freeModule','USE_SUPPORT_DEFAULT_TEXT','DETAIL_DISCUSSIONS_OFF','YA_METRIKA')
+    check_fields = ('active', 'publish', 'COMPATIBLE_PHP8', 'COMPATIBLE_PGSQL', 'SITE24', 'COMPOSITE', 'ADAPT',
+                    'PARTNER_DISCOUNT',
+                    'freeModuleDemo', 'freeModule', 'USE_SUPPORT_DEFAULT_TEXT', 'DETAIL_DISCUSSIONS_OFF', 'YA_METRIKA')
     for _ in check_fields:
         fields[_] = ''
         regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"\schecked')
@@ -324,7 +327,7 @@ def send_update(options):
                     fields[_] = f.read()
 
     inp_fields = ('openLineUrl', 'nameRU', 'PRICERU', 'trial_period', 'NEW_NAME_RU', 'LICENSE_NAME', 'NEW_LICENSE_NAME',
-                  'MARKETING_NAME','DEMO_LINKRU','VIDEO_LINKRU','googleAnalytics','YA_METRIKA_COUNTER','P_SORT')
+                  'MARKETING_NAME', 'DEMO_LINKRU', 'VIDEO_LINKRU', 'googleAnalytics', 'YA_METRIKA_COUNTER', 'P_SORT')
     for _ in inp_fields:
         fields[_] = ''
         regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"')
@@ -347,11 +350,29 @@ def send_update(options):
     except Exception as e:
         raise Exception('upload module error')
 
+    # отчет по уязвимостям
+    try:
+        files = {}
+        fields = {
+            "sessid": sess_id.group(1),
+            "ID": module_id,
+            "send_security_journal": "Y"
+        }
+        if os.path.isfile(arch_path_report):
+            fields['security_journal_confirm'] = 'Y'
+            files['security_journal_file'] = ('security-journal.json', open(arch_path_report, "rb"))
+
+        r = session.post(url_ver, fields, files=files)
+        t_ok_text = parse_success_text(r.text)
+        print('send', url_ver, t_ok_text)
+    except Exception as e:
+        raise Exception('upload report error')
+
 
 def get_all_versions():
     conf = get_config()
     updates_path = os.path.abspath(conf['updates_path'])
-    change_log = {'0001.0000.0000':[]}
+    change_log = {'0001.0000.0000': []}
     for name in os.listdir(updates_path):
         if name[-5:] == '.json':
             continue
@@ -366,6 +387,7 @@ def get_all_versions():
     for _ in sorted_change_log.keys():
         cl.append('.'.join(str(int(_2)) for _2 in _.split(".")))
     return cl
+
 
 def add_description():
     conf = get_config()
@@ -392,7 +414,7 @@ def add_description():
                     _row = row_ar[1]
                     if hashes_data[prepare_version] == row_ar[0]:
                         break
-                    if _row[0] == '-' and len(_row)>10:
+                    if _row[0] == '-' and len(_row) > 10:
                         if _row[-1] == ';':
                             rows_print.append(_row[1:-1].strip())
                         elif row[-1] == '.':
@@ -400,12 +422,12 @@ def add_description():
                         else:
                             rows_print.append(_row[1:].strip())
                 if not len(rows_print):
-                    rows_print.append('обновление '+str(last_version))
+                    rows_print.append('обновление ' + str(last_version))
                 for _ in rows_print:
                     sep = ";\n"
-                    if rows_print[len(rows_print)-1] == _:
+                    if rows_print[len(rows_print) - 1] == _:
                         sep = "."
-                    outfile.write('- '+_+sep)
+                    outfile.write('- ' + _ + sep)
             print("created file", "description.ru", rows_print)
     else:
         print(new_version_desc, "is exists")
