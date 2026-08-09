@@ -366,23 +366,24 @@ def send_update(options):
     except Exception as e:
         raise Exception('upload module error')
 
-    # отчет по уязвимостям
-    try:
-        files = {
-            'security_journal_file': ('security-journal.json', open(arch_path_report, "rb"))
-        }
-        fields = {
-            "sessid": sess_id.group(1),
-            "ID": module_id,
-            "send_security_journal": "Y",
-            "security_journal_confirm": "Y"
-        }
+    if 'security_journal' in options:
+        # отчет по уязвимостям
+        try:
+            files = {
+                'security_journal_file': ('security-journal.json', open(arch_path_report, "rb"))
+            }
+            fields = {
+                "sessid": sess_id.group(1),
+                "ID": module_id,
+                "send_security_journal": "Y",
+                "security_journal_confirm": "Y"
+            }
 
-        r = session.post(url_ver, fields, files=files)
-        t_ok_text = parse_success_text(r.text)
-        print('send', url_ver, t_ok_text)
-    except Exception as e:
-        raise Exception('upload report error')
+            r = session.post(url_ver, fields, files=files)
+            t_ok_text = parse_success_text(r.text)
+            print('send', url_ver, t_ok_text)
+        except Exception as e:
+            raise Exception('upload report error')
 
 
 def get_all_versions():
