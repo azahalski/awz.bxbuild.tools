@@ -259,112 +259,115 @@ def send_update(options):
     if not os.path.isfile(arch_path):
         raise Exception('not updated version')
 
-    # подготовка запроса на добавление версии
-    updater_data = {
-        'sessid': sess_id.group(1),
-        'ID': module_id,
-        'submit': 'Загрузить'
-    }
-    files = {
-        'update': (last_version + '.zip', open(arch_path, "rb"))
-    }
-    # запрос на добавление версии
-    try:
-        r = session.post(url, updater_data, files=files)
-        t_ok_text = parse_success_text(r.text)
-        print('send', url, t_ok_text)
-    except Exception as e:
-        raise Exception('upload version error')
+    if 'add_version' in options:
+        # подготовка запроса на добавление версии
+        updater_data = {
+            'sessid': sess_id.group(1),
+            'ID': module_id,
+            'submit': 'Загрузить'
+        }
+        files = {
+            'update': (last_version + '.zip', open(arch_path, "rb"))
+        }
+        # запрос на добавление версии
+        try:
+            r = session.post(url, updater_data, files=files)
+            t_ok_text = parse_success_text(r.text)
+            print('send', url, t_ok_text)
+        except Exception as e:
+            raise Exception('upload version error')
 
-    # подготовка обновления архива модуля
-    updater_data_ver = {
-        'sessid': sess_id.group(1),
-        'ID': module_id,
-        last_version: 'stable',
-        'submit': 'Загрузить'
-    }
-    try:
-        r = session.post(url_ver, updater_data_ver)
-        t_ok_text = parse_success_text(r.text)
-        print('send', url_ver, t_ok_text)
-    except Exception as e:
-        raise Exception('upload version error')
+    if 'set_stable' in options:
+        # подготовка обновления архива модуля
+        updater_data_ver = {
+            'sessid': sess_id.group(1),
+            'ID': module_id,
+            'last_version': 'stable',
+            'submit': 'Загрузить'
+        }
+        try:
+            r = session.post(url_ver, updater_data_ver)
+            t_ok_text = parse_success_text(r.text)
+            print('send', url_ver, t_ok_text)
+        except Exception as e:
+            raise Exception('upload version error')
 
-    fields = {
-        "sessid": sess_id.group(1),
-        "ID": module_id,
-        "edit_module": "Y",
-        "apply": "Y"
-    }
-    # сбор полей редактора
-    jsFields = ['descriptionRU', 'INSTALLRU', 'SUPPORTRU', 'EULA_LINK']
-    field = None
-    regex = r"(?:(?:var config.*)(descriptionRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(INSTALLRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(SUPPORTRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(EULA_LINK)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))"
-    matches = re.finditer(regex, module_page, re.MULTILINE | re.IGNORECASE)
-    for matchNum, match in enumerate(matches, start=1):
-        for groupNum in range(0, len(match.groups())):
-            groupNum = groupNum + 1
-            group = match.group(groupNum)
-            if group in jsFields:
-                field = group
-            elif field:
-                fields[field] = re.sub(r'\\{1,}n', '\n', group)
-                file_content = os.path.join(conf['output_path'], field + '.txt')
+    if 'edit_module' in options:
+        fields = {
+            "sessid": sess_id.group(1),
+            "ID": module_id,
+            "edit_module": "Y",
+            "apply": "Y"
+        }
+        # сбор полей редактора
+        jsFields = ['descriptionRU', 'INSTALLRU', 'SUPPORTRU', 'EULA_LINK']
+        field = None
+        regex = r"(?:(?:var config.*)(descriptionRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(INSTALLRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(SUPPORTRU)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))|(?:(?:var config.*)(EULA_LINK)(?:.*?;$)(?:\W*\w*\W\w* = ')(.*?(?=';)))"
+        matches = re.finditer(regex, module_page, re.MULTILINE | re.IGNORECASE)
+        for matchNum, match in enumerate(matches, start=1):
+            for groupNum in range(0, len(match.groups())):
+                groupNum = groupNum + 1
+                group = match.group(groupNum)
+                if group in jsFields:
+                    field = group
+                elif field:
+                    fields[field] = re.sub(r'\\{1,}n', '\n', group)
+                    file_content = os.path.join(conf['output_path'], field + '.txt')
+                    if os.path.isfile(file_content):
+                        with open(file_content, "r", encoding='utf-8') as f:
+                            fields[field] = f.read()
+                    field = None
+
+        module_page = " ".join(module_page.split())
+
+        fields['licenses'] = re.findall(r'name="licenses\[\]"\svalue="([0-9A-Z]+)"\schecked', module_page)
+
+        sel_fields = ('mtype', 'category')
+        for _ in sel_fields:
+            fields[_] = []
+            regex1 = re.compile(r'name="' + _ + '\[\]".*?</select>')
+            sel = re.findall(regex1, module_page)
+            if len(sel):
+                regex2 = re.compile(r'option\svalue="([^"]+)"\sselected')
+                fields[_] = re.findall(regex2, sel[0])
+
+        check_fields = ('active', 'publish', 'COMPATIBLE_PHP8', 'COMPATIBLE_PGSQL', 'SITE24', 'COMPOSITE', 'ADAPT',
+                        'PARTNER_DISCOUNT',
+                        'freeModuleDemo', 'freeModule', 'USE_SUPPORT_DEFAULT_TEXT', 'DETAIL_DISCUSSIONS_OFF', 'YA_METRIKA')
+        for _ in check_fields:
+            fields[_] = ''
+            regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"\schecked')
+            _res = re.findall(regex, module_page)
+            if len(_res):
+                fields[_] = _res[0]
+                file_content = os.path.join(conf['output_path'], _ + '.txt')
                 if os.path.isfile(file_content):
                     with open(file_content, "r", encoding='utf-8') as f:
-                        fields[field] = f.read()
-                field = None
+                        fields[_] = f.read()
 
-    module_page = " ".join(module_page.split())
+        inp_fields = ('openLineUrl', 'nameRU', 'PRICERU', 'trial_period', 'NEW_NAME_RU', 'LICENSE_NAME', 'NEW_LICENSE_NAME',
+                      'MARKETING_NAME', 'DEMO_LINKRU', 'VIDEO_LINKRU', 'googleAnalytics', 'YA_METRIKA_COUNTER', 'P_SORT')
+        for _ in inp_fields:
+            fields[_] = ''
+            regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"')
+            _res = re.findall(regex, module_page)
+            if len(_res):
+                fields[_] = _res[0]
+                file_content = os.path.join(conf['output_path'], _ + '.txt')
+                if os.path.isfile(file_content):
+                    with open(file_content, "r", encoding='utf-8') as f:
+                        fields[_] = f.read()
 
-    fields['licenses'] = re.findall(r'name="licenses\[\]"\svalue="([0-9A-Z]+)"\schecked', module_page)
-
-    sel_fields = ('mtype', 'category')
-    for _ in sel_fields:
-        fields[_] = []
-        regex1 = re.compile(r'name="' + _ + '\[\]".*?</select>')
-        sel = re.findall(regex1, module_page)
-        if len(sel):
-            regex2 = re.compile(r'option\svalue="([^"]+)"\sselected')
-            fields[_] = re.findall(regex2, sel[0])
-
-    check_fields = ('active', 'publish', 'COMPATIBLE_PHP8', 'COMPATIBLE_PGSQL', 'SITE24', 'COMPOSITE', 'ADAPT',
-                    'PARTNER_DISCOUNT',
-                    'freeModuleDemo', 'freeModule', 'USE_SUPPORT_DEFAULT_TEXT', 'DETAIL_DISCUSSIONS_OFF', 'YA_METRIKA')
-    for _ in check_fields:
-        fields[_] = ''
-        regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"\schecked')
-        _res = re.findall(regex, module_page)
-        if len(_res):
-            fields[_] = _res[0]
-            file_content = os.path.join(conf['output_path'], _ + '.txt')
-            if os.path.isfile(file_content):
-                with open(file_content, "r", encoding='utf-8') as f:
-                    fields[_] = f.read()
-
-    inp_fields = ('openLineUrl', 'nameRU', 'PRICERU', 'trial_period', 'NEW_NAME_RU', 'LICENSE_NAME', 'NEW_LICENSE_NAME',
-                  'MARKETING_NAME', 'DEMO_LINKRU', 'VIDEO_LINKRU', 'googleAnalytics', 'YA_METRIKA_COUNTER', 'P_SORT')
-    for _ in inp_fields:
-        fields[_] = ''
-        regex = re.compile(r'name="' + _ + '"(?:\s(?:id|size)="[^"]+")?\svalue="([^"]+)"')
-        _res = re.findall(regex, module_page)
-        if len(_res):
-            fields[_] = _res[0]
-            file_content = os.path.join(conf['output_path'], _ + '.txt')
-            if os.path.isfile(file_content):
-                with open(file_content, "r", encoding='utf-8') as f:
-                    fields[_] = f.read()
-
-    files = {
-        'update': ('.last_version.zip', open(arch_path_full, "rb"))
-    }
-    # запрос на обновление данных решения
-    try:
-        r = session.post(url_start, fields, files=files)
-        t_ok_text = parse_success_text(r.text)
-        print('send', url_start, t_ok_text)
-    except Exception as e:
-        raise Exception('upload module error')
+        files = {
+            'update': ('.last_version.zip', open(arch_path_full, "rb"))
+        }
+        # запрос на обновление данных решения
+        try:
+            r = session.post(url_start, fields, files=files)
+            t_ok_text = parse_success_text(r.text)
+            print('send', url_start, t_ok_text)
+        except Exception as e:
+            raise Exception('upload module error')
 
     if 'security_journal' in options:
         # отчет по уязвимостям
