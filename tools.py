@@ -297,7 +297,8 @@ def send_update(options):
             "sessid": sess_id.group(1),
             "ID": module_id,
             "edit_module": "Y",
-            "apply": "Y"
+            "apply": "Y",
+			"publish": "Y"
         }
         # сбор полей редактора
         jsFields = ['descriptionRU', 'INSTALLRU', 'SUPPORTRU', 'EULA_LINK']
@@ -331,7 +332,7 @@ def send_update(options):
                 regex2 = re.compile(r'option\svalue="([^"]+)"\sselected')
                 fields[_] = re.findall(regex2, sel[0])
 
-        check_fields = ('active', 'publish', 'COMPATIBLE_PHP8', 'COMPATIBLE_PGSQL', 'SITE24', 'COMPOSITE', 'ADAPT',
+        check_fields = ('active', 'publish', 'COMPATIBLE_PHP8', 'COMPATIBLE_PHP82', 'COMPATIBLE_PGSQL', 'SITE24', 'COMPOSITE', 'ADAPT',
                         'PARTNER_DISCOUNT',
                         'freeModuleDemo', 'freeModule', 'USE_SUPPORT_DEFAULT_TEXT', 'DETAIL_DISCUSSIONS_OFF', 'YA_METRIKA')
         for _ in check_fields:
