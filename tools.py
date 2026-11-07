@@ -312,7 +312,7 @@ def send_update(options):
                 if group in jsFields:
                     field = group
                 elif field:
-                    fields[field] = re.sub(r'\\{1,}n', '\n', group)
+                    fields[field] = re.sub(r'\\(.)', r'\1', group)
                     file_content = os.path.join(conf['output_path'], field + '.txt')
                     if os.path.isfile(file_content):
                         with open(file_content, "r", encoding='utf-8') as f:
