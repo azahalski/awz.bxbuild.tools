@@ -345,6 +345,10 @@ def send_update(options):
                 if os.path.isfile(file_content):
                     with open(file_content, "r", encoding='utf-8') as f:
                         fields[_] = f.read()
+        # опция совместимости с PHP 8.2 всегда включена
+        fields['COMPATIBLE_PHP82'] = 'Y'
+        # публикация всегда включена
+        fields['publish'] = 'Y'
 
         inp_fields = ('openLineUrl', 'nameRU', 'PRICERU', 'trial_period', 'NEW_NAME_RU', 'LICENSE_NAME', 'NEW_LICENSE_NAME',
                       'MARKETING_NAME', 'DEMO_LINKRU', 'VIDEO_LINKRU', 'googleAnalytics', 'YA_METRIKA_COUNTER', 'P_SORT')
